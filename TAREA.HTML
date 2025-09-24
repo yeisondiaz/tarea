@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>¡A Medir! App Interactiva</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; padding:20px; box-sizing:border-box;}
+        #app { background:#fff; border-radius:20px; box-shadow:0 10px 25px rgba(0,0,0,.1); max-width:900px; width:100%; padding:30px; text-align:center; box-sizing:border-box; display:flex; flex-direction:column; gap:20px;}
+        .screen { display:none; }
+        .screen.active { display:block; }
+        .title { color:#4a5568; font-size:2.5rem; font-weight:700; margin-bottom:20px; }
+        .subtitle { color:#718096; font-size:1.2rem; margin-bottom:30px; }
+        .button { background:#63b3ed; color:#fff; padding:15px 30px; border-radius:15px; font-weight:700; font-size:1.1rem; border:none; cursor:pointer; box-shadow:0 5px 15px rgba(99,179,237,.4); }
+        .button-secondary { background:#f6ad55; color:#fff; padding:12px 25px; border-radius:12px; font-weight:600; font-size:1rem; border:none; cursor:pointer; box-shadow:0 4px 10px rgba(246,173,85,.3); }
+        .button-success { background:#48bb78; color:#fff; padding:15px 30px; border-radius:15px; font-weight:700; font-size:1.1rem; border:none; cursor:pointer; box-shadow:0 5px 15px rgba(72,187,120,.4); }
+        input[type="text"] { padding:12px 15px; border-radius:10px; border:2px solid #cbd5e0; font-size:1rem; width:80%; max-width:300px; margin-bottom:20px; }
+        .option-button { background:#a0aec0; color:#fff; padding:12px 20px; border-radius:10px; font-weight:600; font-size:1rem; border:none; cursor:pointer; margin:5px; flex:1; max-width:200px; }
+        .option-button.selected { background:#63b3ed; box-shadow:0 3px 10px rgba(99,179,237,.4); }
+        .option-button.correct { background:#48bb78; }
+        .option-button.incorrect { background:#fc8181; }
+        .illustration { width:100%; max-width:350px; height:auto; border-radius:15px; margin:20px auto; box-shadow:0 5px 15px rgba(0,0,0,.1); }
+        .flex-row { display:flex; justify-content:center; align-items:center; gap:15px; flex-wrap:wrap; }
+        /* modal styling */
+        #custom-modal.hidden { display:none; }
+        #custom-modal { position: fixed; inset: 0; display: flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="screen active">
+            <h1 class="title">¡Hola, Pequeño Explorador!</h1>
+            <p class="subtitle">¡Vamos a aprender y jugar con las medidas!</p>
+            <img src="https://placehold.co/400x300/F06292/FFFFFF?text=Niños+Midiento" alt="Niños jugando con herramientas de medida" class="illustration">
+            <div class="flex-row mt-5">
+                <button id="go-to-study-button" class="button">Zona de Estudio</button>
+                <button id="go-to-evaluation-main-button" class="button-success">Zona de Evaluación</button>
+            </div>
+        </div>
+
+        <!-- Study Zone -->
+        <div id="study-zone" class="screen">
+            <h2 class="title" id="study-topic-title">Zona de Estudio</h2>
+            <div id="study-content" class="text-lg text-gray-700 leading-relaxed mb-8"></div>
+            <div class="flex-row">
+                <button id="prev-study-button" class="button-secondary">&larr; Anterior</button>
+                <button id="next-study-button" class="button">Siguiente &rarr;</button>
+            </div>
+            <button id="back-to-welcome-from-study" class="button-secondary mt-8">Volver al Inicio</button>
+        </div>
+
+        <!-- Evaluation Registration Screen -->
+        <div id="evaluation-registration" class="screen">
+            <h2 class="title">¡Zona de Evaluación!</h2>
+            <p class="subtitle">¡Antes de empezar, necesitamos tu nombre y curso!</p>
+            <form id="registration-form" class="flex flex-col items-center gap-4">
+                <input type="text" id="student-name" placeholder="Tu Nombre" required class="w-full max-w-sm">
+                <input type="text" id="student-course" placeholder="Tu Curso (ej: K5)" required class="w-full max-w-sm">
+                <button type="submit" class="button-success mt-4">¡Acceder a la Evaluación!</button>
+            </form>
+            <button id="back-to-welcome-from-registration" class="button-secondary mt-8">Volver al Inicio</button>
+        </div>
+
+        <!-- Evaluation Quiz Screen -->
+        <div id="evaluation-quiz" class="screen">
+            <h2 class="title">¡A Responder!</h2>
+            <p id="question-text" class="text-2xl font-semibold text-gray-800 mb-8"></p>
+            <div id="options-container" class="flex-row mb-8"></div>
+            <button id="next-question-button" class="button mt-6">Siguiente Pregunta</button>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="screen">
+            <h2 class="title">¡Felicidades, <span id="result-name"></span>!</h2>
+            <p class="subtitle">Has terminado la evaluación.</p>
+            <p class="text-3xl font-bold text-blue-600 mb-8">Tu Puntuación: <span id="score-display"></span> / <span id="total-questions"></span></p>
+            <img src="https://placehold.co/400x300/9AE6B4/FFFFFF?text=Estrella+de+Logro" alt="Estrella de logro" class="illustration">
+            <div class="flex-row mt-8">
+                <button id="restart-button" class="button-secondary">Empezar de Nuevo</button>
+                <button id="review-study-button" class="button">Volver a Estudiar</button>
+            </div>
+        </div>
+
+        <!-- Custom Modal for Alerts -->
+        <div id="custom-modal" class="hidden">
+            <div class="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
+                <p id="modal-message" class="text-xl font-semibold text-gray-800 mb-6"></p>
+                <button id="modal-close-button" class="button-secondary">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /***********************
+     * CONFIG: pega aquí la URL de tu Apps Script Web App
+     ***********************/
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyFI56mWABP6SVdFmJrLxqvxogw2MKT_OmmzZzKUWsjhjwIV89hz6cUa3lCxp2ZS_U_PQ/exec";
+
+    // Data for Study Zone
+    const studyContent = [
+        { topic: "Longitud", text: "La longitud nos dice qué tan largo o corto es algo. Podemos usar una regla o una cinta métrica para medirla. ¡Imagina medir tu juguete favorito!", image: "https://placehold.co/400x300/FBD38D/FFFFFF?text=Regla+y+Cinta" },
+        { topic: "Peso", text: "El peso nos dice qué tan pesado o ligero es algo. Usamos una balanza para saber si algo pesa mucho o poquito. ¡Compara el peso de una pluma con el de una piedra!", image: "https://placehold.co/400x300/9F7AEA/FFFFFF?text=Balanza" },
+        { topic: "Tiempo", text: "El tiempo nos ayuda a saber cuándo hacemos las cosas: por la mañana, por la tarde o por la noche. Usamos un reloj para saber la hora y un calendario para los días. ¡El tiempo pasa muy rápido cuando te diviertes!", image: "https://placehold.co/400x300/F06292/FFFFFF?text=Reloj+y+Calendario" }
+    ];
+
+    // Data for Evaluation Zone
+    const quizQuestions = [
+        { question: "¿Qué usamos para saber qué tan largo es un lápiz?", options: ["Balanza", "Reloj", "Regla"], correctAnswer: "Regla" },
+        { question: "Si mides tu cama, ¿estás midiendo su...?", options: ["Peso", "Tiempo", "Longitud"], correctAnswer: "Longitud" },
+        { question: "¿Qué objeto es más pesado: una pluma o una piedra?", options: ["Pluma", "Piedra", "Son iguales"], correctAnswer: "Piedra" },
+        { question: "Para saber cuánto pesa una manzana, ¿qué usarías?", options: ["Reloj", "Balanza", "Regla"], correctAnswer: "Balanza" },
+        { question: "¿Qué te ayuda a saber qué hora es para ir a jugar?", options: ["Regla", "Balanza", "Reloj"], correctAnswer: "Reloj" },
+        { question: "¿Cuántos días tiene una semana?", options: ["Cinco", "Siete", "Diez"], correctAnswer: "Siete" }
+    ];
+
+    // App state
+    let currentStudyIndex = 0;
+    let currentQuizIndex = 0;
+    let score = 0;
+    let studentName = "";
+    let studentCourse = "";
+    let selectedOptionIndex = null; // index of selected option for current question
+    let respuestasUsuario = []; // array to store user's answers
+
+    // DOM elements
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const studyZone = document.getElementById('study-zone');
+    const evaluationRegistration = document.getElementById('evaluation-registration');
+    const evaluationQuiz = document.getElementById('evaluation-quiz');
+    const resultScreen = document.getElementById('result-screen');
+    const customModal = document.getElementById('custom-modal');
+    const modalMessage = document.getElementById('modal-message');
+    const modalCloseButton = document.getElementById('modal-close-button');
+
+    const goToStudyButton = document.getElementById('go-to-study-button');
+    const goToEvaluationMainButton = document.getElementById('go-to-evaluation-main-button');
+    const studyTopicTitle = document.getElementById('study-topic-title');
+    const studyContentDiv = document.getElementById('study-content');
+    const prevStudyButton = document.getElementById('prev-study-button');
+    const nextStudyButton = document.getElementById('next-study-button');
+    const backToWelcomeFromStudyButton = document.getElementById('back-to-welcome-from-study');
+
+    const registrationForm = document.getElementById('registration-form');
+    const studentNameInput = document.getElementById('student-name');
+    const studentCourseInput = document.getElementById('student-course');
+    const backToWelcomeFromRegistrationButton = document.getElementById('back-to-welcome-from-registration');
+
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const nextQuestionButton = document.getElementById('next-question-button');
+
+    const resultNameSpan = document.getElementById('result-name');
+    const scoreDisplaySpan = document.getElementById('score-display');
+    const totalQuestionsSpan = document.getElementById('total-questions');
+    const restartButton = document.getElementById('restart-button');
+    const reviewStudyButton = document.getElementById('review-study-button');
+
+    // Utility: show screen
+    function showScreen(screenToShow) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        screenToShow.classList.add('active');
+    }
+
+    function showModal(message) {
+        modalMessage.textContent = message;
+        customModal.classList.remove('hidden');
+        customModal.style.display = 'flex';
+    }
+    function hideModal() { customModal.classList.add('hidden'); customModal.style.display = 'none'; }
+
+    // Study zone
+    function loadStudyContent(index) {
+        const content = studyContent[index];
+        studyTopicTitle.textContent = `Zona de Estudio: ${content.topic}`;
+        studyContentDiv.innerHTML = `
+            <p class="mb-4 text-xl font-medium text-gray-800">${content.topic}</p>
+            <p>${content.text}</p>
+            <img src="${content.image}" alt="Ilustración de ${content.topic}" class="illustration">
+        `;
+        prevStudyButton.disabled = index === 0;
+        nextStudyButton.disabled = index === studyContent.length - 1;
+    }
+
+    // Quiz functions
+    function loadQuestion(index) {
+        selectedOptionIndex = null;
+        const q = quizQuestions[index];
+        questionText.textContent = q.question;
+        optionsContainer.innerHTML = '';
+        q.options.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = opt;
+            btn.className = 'option-button';
+            btn.dataset.index = i;
+            btn.addEventListener('click', () => selectOption(i, btn));
+            optionsContainer.appendChild(btn);
+        });
+
+        nextQuestionButton.textContent = (index === quizQuestions.length - 1) ? "Ver Resultado" : "Siguiente Pregunta";
+        nextQuestionButton.disabled = true;
+    }
+
+    function selectOption(index, btn) {
+        // visual
+        document.querySelectorAll('.option-button').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+
+        selectedOptionIndex = index;
+        nextQuestionButton.disabled = false;
+    }
+
+    function checkAnswer() {
+        if (selectedOptionIndex === null) {
+            showModal("¡Por favor, selecciona una opción antes de continuar!");
+            return false;
+        }
+
+        const q = quizQuestions[currentQuizIndex];
+        const opcionSeleccionada = q.options[selectedOptionIndex];
+        const correcta = q.correctAnswer;
+
+        // Guardar la respuesta del usuario
+        respuestasUsuario[currentQuizIndex] = {
+            pregunta: q.question,
+            seleccionada: opcionSeleccionada,
+            correcta: correcta
+        };
+
+        // Marcar visualmente correctas/incorrectas
+        document.querySelectorAll('.option-button').forEach(btn => {
+            const idx = Number(btn.dataset.index);
+            if (q.options[idx] === correcta) btn.classList.add('correct');
+            if (q.options[idx] === opcionSeleccionada && opcionSeleccionada !== correcta) btn.classList.add('incorrect');
+            btn.disabled = true;
+        });
+
+        if (opcionSeleccionada === correcta) score++;
+
+        return true;
+    }
+
+    // Event listeners
+    goToStudyButton.addEventListener('click', () => {
+        currentStudyIndex = 0;
+        loadStudyContent(currentStudyIndex);
+        showScreen(studyZone);
+    });
+
+    goToEvaluationMainButton.addEventListener('click', () => showScreen(evaluationRegistration));
+
+    prevStudyButton.addEventListener('click', () => {
+        if (currentStudyIndex > 0) { currentStudyIndex--; loadStudyContent(currentStudyIndex); }
+    });
+    nextStudyButton.addEventListener('click', () => {
+        if (currentStudyIndex < studyContent.length - 1) { currentStudyIndex++; loadStudyContent(currentStudyIndex); }
+    });
+    backToWelcomeFromStudyButton.addEventListener('click', () => showScreen(welcomeScreen));
+
+    registrationForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        studentName = studentNameInput.value.trim();
+        studentCourse = studentCourseInput.value.trim();
+        if (!studentName || !studentCourse) { showModal("¡Por favor, completa tu nombre y curso para empezar!"); return; }
+        // reset quiz state
+        currentQuizIndex = 0;
+        score = 0;
+        respuestasUsuario = [];
+        loadQuestion(currentQuizIndex);
+        showScreen(evaluationQuiz);
+    });
+
+    backToWelcomeFromRegistrationButton.addEventListener('click', () => showScreen(welcomeScreen));
+
+    nextQuestionButton.addEventListener('click', () => {
+        if (!checkAnswer()) return;
+        // if there are more questions -> next, else show result
+        if (currentQuizIndex < quizQuestions.length - 1) {
+            currentQuizIndex++;
+            loadQuestion(currentQuizIndex);
+        } else {
+            // finished
+            resultNameSpan.textContent = studentName;
+            scoreDisplaySpan.textContent = score;
+            totalQuestionsSpan.textContent = quizQuestions.length;
+
+            // enviar a Sheets (envía también las respuestas)
+            enviarResultadosSheets(studentName, studentCourse, score, quizQuestions.length, respuestasUsuario);
+
+            showScreen(resultScreen);
+        }
+    });
+
+    restartButton.addEventListener('click', () => {
+        // limpiar todo para nuevo estudiante
+        studentNameInput.value = '';
+        studentCourseInput.value = '';
+        currentQuizIndex = 0;
+        score = 0;
+        respuestasUsuario = [];
+        selectedOptionIndex = null;
+        showScreen(welcomeScreen);
+    });
+
+    reviewStudyButton.addEventListener('click', () => {
+        currentStudyIndex = 0;
+        loadStudyContent(currentStudyIndex);
+        showScreen(studyZone);
+    });
+
+    modalCloseButton.addEventListener('click', hideModal);
+
+    // initial
+    showScreen(welcomeScreen);
+
+    // --- Envío a Google Sheets vía Apps Script ---
+    async function enviarResultadosSheets(nombre, curso, puntaje, total, respuestas) {
+        if (!APPS_SCRIPT_URL) {
+            console.warn("APPS_SCRIPT_URL no configurada.");
+            return;
+        }
+
+        const payload = {
+            nombre: nombre,
+            curso: curso,
+            puntaje: puntaje,
+            total: total,
+            fecha: new Date().toISOString(),
+            respuestas: respuestas,
+            userAgent: navigator.userAgent,
+            referrer: document.referrer,
+            evento: 'resultado'
+        };
+
+        try {
+            const resp = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            // Apps Script responde JSON si lo configuraste así
+            const data = await resp.json().catch(() => null);
+            console.log("Respuesta del Apps Script:", data || "(no JSON devuelto)");
+        } catch (err) {
+            console.error("Error al enviar resultados a Apps Script:", err);
+        }
+    }
+
+    // 👇 registra automáticamente una visita al cargar la página
+    window.addEventListener('load', () => {
+        if (!APPS_SCRIPT_URL) return;
+        fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                evento: 'visita',
+                fecha: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                referrer: document.referrer
+            })
+        }).catch(console.error);
+    });
+    </script>
+</body>
+</html>
